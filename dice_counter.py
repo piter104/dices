@@ -65,58 +65,37 @@ def fragment(image, cubes):
 
 
 if __name__ == "__main__" :
-    img = cv.imread("dice_back.jpg")
+    img = cv.imread("XD.jpg")
     image = cv.resize(img, (800, 600))
     image_grayscale = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
-    temp = remove_everything_above_std_and_mean(image_grayscale)
-    kernel = np.ones((3,3), np.uint8)
-    temp = cv.erode(temp, kernel, iterations=3)
-    temp = cv.dilate(temp, kernel, iterations=6)
     
-    closing = cv.morphologyEx(temp, cv.MORPH_OPEN, kernel)
+    
+    temp = remove_everything_above_std_and_mean(image_grayscale)
+
+
+
+    kernel = np.ones((3,3), np.uint8)
+    temp = cv.erode(temp, kernel, iterations=2)
+    temp = cv.dilate(temp, kernel, iterations=2)
+            
+    temp = cv.morphologyEx(temp, cv.MORPH_OPEN, kernel)
     
     contoursss, hierarchy = cv.findContours(temp, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
     
-
-    # cv.drawContours(temp, contours, -1, color, 5, cv.LINE_8, hierarchy, 2)
-    fig = plt.figure()
-    for i, con in enumerate(contoursss):
-    
-    
-        fig.add_subplot(len(contoursss), 1, i+1)
-        x,y,w,h = cv.boundingRect(contoursss[i])
+    images = []
+    for j, con in enumerate(contoursss):
+        x,y,w,h = cv.boundingRect(contoursss[j])
+        if w < 80 or h < 80:
+            continue
         cropped =  temp[y:y+h,x:x+w]
         rezised = cv.resize(cropped, (400, 400))
     
-        contours = cv.findContours(rezised.copy(), cv.RETR_TREE ,
-            cv.CHAIN_APPROX_SIMPLE)[0]
-        # contours.sort(key=lambda x:cv.boundingRect(x)[0])
+        
         color = (rng.randint(120,130), rng.randint(120,130), rng.randint(120,130))
-        array = []
-        ii = 1
-            # Approximate contours to polygons + get bounding rects and circles
-        contours_poly = [None]*len(contours)
-        boundRect = [None]*len(contours)
-        centers = [None]*len(contours)
-        radius = [None]*len(contours)
-        for i, c in enumerate(contours):
-            contours_poly[i] = cv.approxPolyDP(c, 3, True)
-            boundRect[i] = cv.boundingRect(contours_poly[i])
-            centers[i], radius[i] = cv.minEnclosingCircle(contours_poly[i])
-      
-                # Draw polygonal contour + bonding rects + circles
-        for i in range(len(contours)):
-            # cv.drawContours(rezised, contours_poly, i, color, 6)
-            # cv.rectangle(rezised, (int(boundRect[i][0]), int(boundRect[i][1])), \
-            # (int(boundRect[i][0]+boundRect[i][2]), int(boundRect[i][1]+boundRect[i][3])), color, 2, 4)
-            # cv.circle(rezised, (int(centers[i][0]), int(centers[i][1])), int(radius[i]), color, 2, 4)
-            pass
-
-
-        circles = cv.HoughCircles(rezised, cv.HOUGH_GRADIENT, 1, 20,
-                            param1=100, param2=18,
-                            minRadius=0, maxRadius=100)
-    
+        
+        circles = cv.HoughCircles(rezised, cv.HOUGH_GRADIENT, 1, 30,
+                            param1=100, param2=13,
+                            minRadius=0, maxRadius=60)
     
         if circles is not None:
             circles = np.uint16(np.around(circles))
@@ -128,6 +107,13 @@ if __name__ == "__main__" :
                 radius = i[2]
                 cv.circle(rezised, center, radius, color, 5)
     
-        plt.imshow(rezised)
+        images.append(rezised)
+
+    fig = plt.figure()
+
+    for i, img in enumerate(images):
+        fig.add_subplot(len(images), 1, i+1)
+        plt.imshow(img)
+
 
     plt.show()

@@ -13,10 +13,9 @@ def normalize_image(image):
     return  mask.astype(np.uint8)
     
 
-def remove_everything_above_std_and_mean(image):
-    # image = skimage.filters.gaussian(image, sigma=20)
-    x = round(np.std(image) + np.mean(image))
-    return np.array((image > x) * 255, dtype=np.uint8)
+def remove_everything_below_std_and_mean(image):
+    treshold = round(np.std(image) + np.mean(image))
+    return np.array((image > treshold) * 255, dtype=np.uint8)
 
 
 def draw_contours(image):
@@ -30,7 +29,7 @@ def draw_contours(image):
 def process_image(image):
     image = cv.resize(image, (800, 600))
     image_grayscale = cv.cvtColor(255 - image, cv.COLOR_RGB2GRAY)
-    temp = remove_everything_above_std_and_mean(image_grayscale)
+    temp = remove_everything_below_std_and_mean(image_grayscale)
     contoured_image1 = draw_contours(temp)
     plt.figure(figsize=(25,25))
     plt.subplot(1, 2, 1)
@@ -60,60 +59,72 @@ def find_rectangle(contours, hierarchy):
     return cubes
 
 
-def fragment(image, cubes):
-    return cv.resize(image[cubes[3]:cubes[2], cubes[1]:cubes[0]], (400, 400))
 
 
 if __name__ == "__main__" :
-    img = cv.imread("XD.jpg")
-    image = cv.resize(img, (800, 600))
-    image_grayscale = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
+    image = cv.imread("airpodsy.png")
+    image = cv.resize(image, (1280, 720))
     
+   
+    bw_image = cv.cvtColor(image, cv.COLOR_RGB2GRAY)
     
-    temp = remove_everything_above_std_and_mean(image_grayscale)
-
-
-
+    plt.imshow(bw_image, cmap="binary_r")
+    plt.show()
+   
+    temp = remove_everything_below_std_and_mean(bw_image)
     kernel = np.ones((3,3), np.uint8)
     temp = cv.erode(temp, kernel, iterations=2)
-    temp = cv.dilate(temp, kernel, iterations=2)
             
-    temp = cv.morphologyEx(temp, cv.MORPH_OPEN, kernel)
     
+
+    
+    plt.imshow(temp, cmap="binary_r")
+    plt.show()
+
+    all_circles = 0
+    image = np.array(image, dtype=np.uint8)
     contoursss, hierarchy = cv.findContours(temp, cv.RETR_EXTERNAL, cv.CHAIN_APPROX_NONE)
-    
-    images = []
     for j, con in enumerate(contoursss):
         x,y,w,h = cv.boundingRect(contoursss[j])
-        if w < 80 or h < 80:
+
+        peri = cv.arcLength(con, True)
+        approx = cv.approxPolyDP(con, 0.03 * peri, True)
+        print(approx)
+
+        if len(approx) != 4 or w < 30 or w > 400 or h < 30 or h > 400:
             continue
+
         cropped =  temp[y:y+h,x:x+w]
         rezised = cv.resize(cropped, (400, 400))
     
         
+
+
         color = (rng.randint(120,130), rng.randint(120,130), rng.randint(120,130))
+        minimum_distance_between_circles_centers = 80 
         
-        circles = cv.HoughCircles(rezised, cv.HOUGH_GRADIENT, 1, 30,
-                            param1=100, param2=13,
-                            minRadius=0, maxRadius=60)
+        circles = cv.HoughCircles(rezised, cv.HOUGH_GRADIENT, 1,
+                            minimum_distance_between_circles_centers,
+                            param1=100, param2=14,
+                            minRadius=15, maxRadius=80)
     
-        if circles is not None:
-            circles = np.uint16(np.around(circles))
-            for i in circles[0, :]:
-                center = (i[0], i[1])
-                # circle center
-                cv.circle(rezised, center, 1, color, 4)
-                # circle outline
-                radius = i[2]
-                cv.circle(rezised, center, radius, color, 5)
+        if circles is None:
+            continue 
+        circles = np.uint16(np.around(circles))
+        circles_count = len(circles[0, :])
+        all_circles += circles_count
+        cv.rectangle(image, (int(x), int(y)), (int(x+w), int(y+h)), color, 4)
+        cv.putText(image, str(circles_count), (int(x+w+10), int(y+h+10)), cv.FONT_HERSHEY_SIMPLEX, 2, color, 3, cv.LINE_AA)
+
+    # fig = plt.figure()
+
+    # for i, img in enumerate(images):
+    #     fig.add_subplot(len(images), 1, i+1)
+    #     plt.imshow(img)
+
+    cv.putText(image, f'Wszystkich kropek: {all_circles}', (60, 60), cv.FONT_HERSHEY_SIMPLEX, 2, (100, 100, 100), 4, cv.LINE_AA)
     
-        images.append(rezised)
 
-    fig = plt.figure()
-
-    for i, img in enumerate(images):
-        fig.add_subplot(len(images), 1, i+1)
-        plt.imshow(img)
-
+    plt.imshow(cv.cvtColor(image, cv.COLOR_BGR2RGB))
 
     plt.show()

@@ -31,7 +31,7 @@ def process_image_and_draw_fragments(filtered_image):
         x,y,w,h = cv.boundingRect(contoursss[j])
 
         perimeter  = cv.arcLength(con, True)
-        approx = cv.approxPolyDP(con, 0.07 * perimeter , True)
+        approx = cv.approxPolyDP(con, 0.03 * perimeter , True)
         
         if len(approx) != 4 or w < min_width or w > max_width or h < min_width or h > max_width:
             continue
@@ -79,7 +79,7 @@ def __process(base_image, filtered_image):
         x,y,w,h = cv.boundingRect(contoursss[j])
 
         perimeter  = cv.arcLength(con, True)
-        approx = cv.approxPolyDP(con, 0.07 * perimeter , True)
+        approx = cv.approxPolyDP(con, 0.03 * perimeter , True)
         
         if len(approx) != 4 or w < min_width or w > max_width or h < min_width or h > max_width:
             continue
